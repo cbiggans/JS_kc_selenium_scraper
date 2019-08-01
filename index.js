@@ -1,5 +1,5 @@
-const axios = require('axios')
-const fetch = require('node-fetch')
+// const axios = require('axios')
+// const fetch = require('node-fetch')
 const url = require('url')
 
 var webdriver = require('selenium-webdriver');
