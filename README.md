@@ -1,5 +1,12 @@
 Installation
 ============
+Add `<project_root>/bin` to env PATH in `~/.bashrc`
+* `export PATH="/home/cbiggans/programming/node/js_kc_selenium_scraper/bin/:$PATH"`
+Load env w/ `source`
+* `source ~/.bashrc`
+Install all the other packages using npm
+* `npm install`
+
 * Be sure to add each item to your $PATH in the `.bashrc` or `.profile` files.
 * These files should probably be added to the `~/.local` directory
 
