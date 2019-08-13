@@ -1,5 +1,6 @@
-// const axios = require('axios')
-// const fetch = require('node-fetch')
+'use strict';
+
+const fetch = require('node-fetch')
 const url = require('url')
 
 var webdriver = require('selenium-webdriver');
@@ -44,9 +45,6 @@ async function launchTaxAccessor(driver) {
 
     var inputBoxId = 'cphContent_checkbox_acknowledge'
     await clickId(driver, inputBoxId)
-
-    console.log('CLICKED')
-    // driver.quit();
 }
 
 async function sendTextById(driver, id, text) {
@@ -55,7 +53,7 @@ async function sendTextById(driver, id, text) {
 }
 
 async function sendTextByEl(el, text) {
-    console.log(el)
+    // console.log(el)
     await el.sendKeys(text)
 }
 
@@ -68,7 +66,7 @@ async function waitForId(driver, id) {
   while(!el) {
     try {
       el = await findElementById(driver, id)
-      console.log('FOUND')
+      console.log('FOUND: ', id)
     } catch {
       el = null
       console.log('ELEMENT NOT FOUND - TRYING AGAIN, ID: ', id)
@@ -106,7 +104,7 @@ async function getParcelNumByUrl(driver) {
     if(query) {
       parcelNum = query.split('=')[1]
     }
-    console.log('Query = ' + query)
+    console.log('Query => ' + query)
   }
 
   console.log('parcelNum = ' + parcelNum)
@@ -181,44 +179,49 @@ async function searchTaxAccountNum(driver, parcelNum) {
 }
 
 async function getCookies(driver) {
-  cookies = await driver.manage().getCookies()
+  var cookies = await driver.manage().getCookies()
 
-  console.log('COOKIES: ', cookies)
-  result = {}
-  cookies.forEach(function(cookie) {
+  // console.log('COOKIES: ', cookies)
+  var result = {}
+  await cookies.forEach(function(cookie) {
       result[cookie['name']] = cookie['value']
   })
-  console.log('RESULT: ', result)
+  // console.log('==================COOKIES============================')
+  // console.log('RESULT: ', result)
 
   return result
 }
 
 async function getMailingAddress(driver, parcelNum) {
-	// var url = 'https://payment.kingcounty.gov/Home/TenantCall?app=PropertyTaxes'
+	var url = 'https://payment.kingcounty.gov/Home/TenantCall?app=PropertyTaxes'
 
-  // var cookies = await getCookies(driver)
-  // var data = '{"path": "RealProperty/' + parcelNum + '", "captchatoken":""}'
+  var cookies = await getCookies(driver)
+  var headers = {
+      'Content-Type': 'application/json',
+      'Cookie': 'payment.kingcounty.gov=' + cookies['payment.kingcounty.gov'] + ';'
+  }
+  var body = '{"path": "RealProperty/' + parcelNum + '", "captchatoken":""}'
 
-  // headers = {
-  //     'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:64.0) Gecko/20100101 Firefox/64.0',
-  //     'Accept': 'application/json, text/plain, */*',
-  //     'Accept-Language': 'en-US,en;q=0.5',
-  //     'Referer': 'https://payment.kingcounty.gov/Home/Index?app=PropertyTaxes',
-  //     'Content-Type': 'application/json',
-  // }
-  // var result = await fetch(url, {
-  //   method: 'post',
-  //   credentials: 'include',
-  //   headers: headers,
-  //   cookies: cookies,
-  //   body: JSON.stringify(data)
-  // })
+  var data = await fetch('https://payment.kingcounty.gov/Home/TenantCall?app=PropertyTaxes', {
+    method: 'POST',
+    headers: headers,
+    body: body,
+  })
+  .then(response => {
+    // console.log(response)
+    return response.json()
+  })
+  .then(resp => {
+    return JSON.parse(resp).data[0]
+  })
 
-  // console.log('RESULT: ', result)
-  // var mailingAddress = result['data']['address1'] + ', ' + result['data']['address2']
-  var id = 'collapse322304907403'
-  await waitForId(driver, id)
-  var mailingAddress = await getElTextById(driver, id)
+  var address1 = data.address1.trim()
+
+  var addrList = data.address2.split(' ')
+  var address2 = addrList[0] + ', ' + addrList[1] + ' ' + addrList[addrList.length-1]
+
+  var mailingAddress = address1 + ', ' + address2
+  console.log('Mailing Address: ', mailingAddress)
 
   return mailingAddress
 }
@@ -235,35 +238,25 @@ async function main() {
   await gotoPropertyDetail(driver)
 
   var landData = await getLandData(driver)
-  console.log('LAND DATA: ')
-  console.log(landData)
+  // console.log('LAND DATA: ')
+  // console.log(landData)
 
   var buildingData = await getBuildingData(driver)
-  console.log('BUILDING DATA: ')
-  console.log(buildingData)
+  // console.log('BUILDING DATA: ')
+  // console.log(buildingData)
 
   var taxHistoricalData = await getTaxHistoricalData(driver)
-  console.log('Tax Historical Data: ')
-  console.log(taxHistoricalData)
+  // console.log('Tax Historical Data: ')
+  // console.log(taxHistoricalData)
 
   // Switch sites to get mailing info of owner
   await launchPropertyTaxSite(driver)
-  searchTaxAccountNum(driver, parcelNum)
+  await searchTaxAccountNum(driver, parcelNum)
 
   var mailingAddress = await getMailingAddress(driver, parcelNum)
-  console.log(mailingAddress)
+  // console.log(mailingAddress)
   
   driver.close()
 }
 
 main()
-
-
-// .then(function(){
-//     // driver.findElement(webdriver.By.name('q')).sendKeys('BrowserStack\n').then(function(){
-//     // driver.getTitle().then(function(title) {
-//     //   console.log(title);
-//     //   driver.quit();
-//     // });
-//     // });
-// });
